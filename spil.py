@@ -20,6 +20,42 @@ __license__ = "None"
 
 logger = logging.getLogger("spill")
 
+
+def query_yes_no(prompt, default="yes"):
+    """
+    This function queries the user for a yes/no via the console
+    :param prompt: The prompt to ask the user
+    :param default: The default answer that is selected by pressing enter
+    :return: True if the user responded to the prompt with yes, false if no
+    """
+    yes = {"yes", "y", "ye"}
+    no = {"no", "n"}
+    exit_responses = {"exit", "quit", "stop"}
+
+    if default is True or default in yes:
+        yes.add("")
+        options_text = "Y/n"
+    elif default is False or default in no:
+        no.add("")
+        options_text = "y/N"
+    elif default is None:
+        options_text = "y/n"
+    else:
+        raise ValueError
+
+    stdout = "{prompt} [{options}] ".format(prompt=prompt, options=options_text)
+
+    while True:
+        response = input(stdout).lower()
+        if response in yes:
+            return True
+        elif response in no:
+            return False
+        elif response in exit_responses:
+            exit()
+        else:
+            print("Answer with yes/no/exit.")
+
 def parse_arguments():
     description = "This command line utility spills the contents of a directory"
     parser = argparse.ArgumentParser(description=description)
@@ -30,6 +66,7 @@ def parse_arguments():
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument("-k", "--keep-directory", action="store_true", help="Keep spilled directory")
+    options_group.add_argument("-f", "--overwrite", action="store_true", help="Overwrite files")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
@@ -63,16 +100,43 @@ def check_permissions(spilled, destination=None):
         exit(1)
 
     if destination:
-        logger.debug("coisjf")
+        logger.debug("Checking permissions on ")
 
+def spill_directory(directory, destination, keep=False, overwrite=False):
 
-def spill_directory(directory, destination, keep=False):
+    if (destination and not os.path.isdir(destination)):
+        logger.info("Making directory: %s" % directory)
+        try:
+            os.makedirs(directory)
+        except:
+            logger.error("Could not create create directory: %s exiting without spilling" % directory)
 
+    num_files_moved = 0
     for file in os.listdir(directory):
         full_path = os.path.join(directory)
-        if cant_modify(full_path):
-            logger.warning("Could not move: %s" % file)
 
+        if cant_modify(full_path):
+            logger.warning("Could not move %s: permission denied" % file)
+            keep=True
+            continue
+
+        new_filename = os.path.join(destination, file)
+        if os.path.exists(new_filename):
+            if not overwrite and not query_yes_no("%s exists. Overwrite?" % new_filename, default="no"):
+                logger.info("Did not move: %s" % new_filename)
+                continue
+
+        logger.info("Moving %s..." % file)
+        os.rename(full_path, new_filename)
+        num_files_moved += 1
+
+    if not keep and os.listdir(directory) == []:
+        logger.info("Removing %s (now empty)" % directory)
+        os.rmdir(directory)
+    else:
+        logger.info("Not removing: " % directory)
+
+    logger.info("Spill complete. Files moved: %d" % num_files_moved)
 
 def main():
     args = parse_arguments()
@@ -82,7 +146,7 @@ def main():
     destination = args.destination if args.destination else os.path.dirname(spilled)
 
     check_permissions(spilled, destination=destination)
-    spill_directory(spilled, destination, keep=args.keep)
+    spill_directory(spilled, destination, keep=args.keep, overwrite=args.overwrite)
 
 if __name__ == "__main__":
     main()
