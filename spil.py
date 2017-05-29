@@ -10,13 +10,13 @@ and then delete myDirectory if it has become empty.
 """
 
 import os
-impos sys
+import sys
 import argparse
 import logging
 
 __version__ = 1.0
 __author__ = "Jonathan Deaton (jdeaton@stanford.edu)"
-__license__ = "No license"
+__license__ = "None"
 
 logger = logging.getLogger("spill")
 
@@ -43,27 +43,46 @@ def setup_logging(args):
         logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
     elif args.verbose:
         logger.setLevel(logging.INFO)
-        logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+        logging.basicConfig(format='[%(asctime)s][%(levelname)s] - %(message)s')
     else:
         logger.setLevel(logging.WARNING)
         logging.basicConfig(format='[log][%(levelname)s] - %(message)s')
 
-def check_permissions():
-    pass
+def cant_modify(path):
+    return not os.access(path, os.R_OK) or not os.access(path, os.W_OK)
 
-def spil_directory(directory, destination=None):
-    pass
+def check_permissions(spilled, destination=None):
+    logger.debug("Checking permissions of: %s")
+
+    if not os.path.isdir(spilled):
+        logger.error("No directory: %s" % spilled)
+        exit(1)
+
+    if cant_modify(spilled):
+        logger.error("Cannot modify: %s, exiting without spilling" % spilled)
+        exit(1)
+
+    if destination:
+        logger.debug("coisjf")
+
+
+def spill_directory(directory, destination, keep=False):
+
+    for file in os.listdir(directory):
+        full_path = os.path.join(directory)
+        if cant_modify(full_path):
+            logger.warning("Could not move: %s" % file)
+
 
 def main():
     args = parse_arguments()
     setup_logging(args)
 
-    spilled = args.directory[0]
-
+    spilled = os.path.abspath(args.directory[0])
     destination = args.destination if args.destination else os.path.dirname(spilled)
 
-    check_permissions()
-    spil_directory(spilled, destination=destination)
+    check_permissions(spilled, destination=destination)
+    spill_directory(spilled, destination, keep=args.keep)
 
 if __name__ == "__main__":
     main()
