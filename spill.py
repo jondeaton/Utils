@@ -116,7 +116,6 @@ def spill_directory(directory, destination, keep=False, overwrite=False):
         logger.info("Making directory: %s" % destination)
         try: os.makedirs(destination)
         except:
-            raise
             logger.error("Could not create create directory: %s exiting without spilling" % destination)
             exit()
 
