@@ -65,7 +65,7 @@ def parse_arguments():
     file_group.add_argument("destination", nargs='?', help="Destination to spill into")
 
     options_group = parser.add_argument_group("Options")
-    options_group.add_argument("-k", "--keep-directory", action="store_true", help="Keep spilled directory")
+    options_group.add_argument("-k", "--keep-directory", dest="keep", action="store_true", help="Keep spilled directory")
     options_group.add_argument("-f", "--overwrite", action="store_true", help="Overwrite files")
 
     console_options_group = parser.add_argument_group("Console Options")
@@ -113,7 +113,7 @@ def spill_directory(directory, destination, keep=False, overwrite=False):
 
     num_files_moved = 0
     for file in os.listdir(directory):
-        full_path = os.path.join(directory)
+        full_path = os.path.join(directory, file)
 
         if cant_modify(full_path):
             logger.warning("Could not move %s: permission denied" % file)
@@ -134,7 +134,7 @@ def spill_directory(directory, destination, keep=False, overwrite=False):
         logger.info("Removing %s (now empty)" % directory)
         os.rmdir(directory)
     else:
-        logger.info("Not removing: " % directory)
+        logger.info("Not removing: %s" % directory)
 
     logger.info("Spill complete. Files moved: %d" % num_files_moved)
 
