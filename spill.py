@@ -20,7 +20,6 @@ __license__ = "None"
 
 logger = logging.getLogger("spill")
 
-
 def query_yes_no(prompt, default="yes"):
     """
     This function queries the user for a yes/no via the console
@@ -83,16 +82,16 @@ def setup_logging(args):
         logging.basicConfig(format='[%(asctime)s][%(levelname)s] - %(message)s')
     else:
         logger.setLevel(logging.WARNING)
-        logging.basicConfig(format='[log][%(levelname)s] - %(message)s')
+        logging.basicConfig(format='[spill][%(levelname)s] - %(message)s')
 
 def cant_modify(path):
     return not os.access(path, os.R_OK) or not os.access(path, os.W_OK)
 
 def check_permissions(spilled, destination=None):
-    logger.debug("Checking permissions of: %s")
+    logger.debug("Checking permissions: %s" % spilled)
 
     if not os.path.isdir(spilled):
-        logger.error("No directory: %s" % spilled)
+        logger.error("Not a directory: %s" % spilled)
         exit(1)
 
     if cant_modify(spilled):
@@ -100,16 +99,26 @@ def check_permissions(spilled, destination=None):
         exit(1)
 
     if destination:
-        logger.debug("Checking permissions on ")
+        if os.path.exists(destination) and not os.path.isdir(destination):
+            logger.error("Destination: %s exists and is not a directory. Exiting" % destination)
+            exit(1)
+        if not os.path.exists(destination): return
+        else:
+            logger.debug("Checking permissions: %s" % destination)
+            if cant_modify(destination):
+                logger.error("Cannot modify destination: %s" % destination)
+                exit(1)
+
 
 def spill_directory(directory, destination, keep=False, overwrite=False):
 
-    if (destination and not os.path.isdir(destination)):
-        logger.info("Making directory: %s" % directory)
-        try:
-            os.makedirs(directory)
+    if (destination and not os.path.exists(destination)):
+        logger.info("Making directory: %s" % destination)
+        try: os.makedirs(destination)
         except:
-            logger.error("Could not create create directory: %s exiting without spilling" % directory)
+            raise
+            logger.error("Could not create create directory: %s exiting without spilling" % destination)
+            exit()
 
     num_files_moved = 0
     for file in os.listdir(directory):
