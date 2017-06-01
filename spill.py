@@ -66,6 +66,7 @@ def parse_arguments():
     options_group = parser.add_argument_group("Options")
     options_group.add_argument("-k", "--keep-directory", dest="keep", action="store_true", help="Keep spilled directory")
     options_group.add_argument("-f", "--overwrite", action="store_true", help="Overwrite files in target")
+    options_group.add_argument("-e", "--file-extension", dest="file_extension", help="Only move files with this extension")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
@@ -109,8 +110,7 @@ def check_permissions(spilled, destination=None):
                 logger.error("Cannot modify target: %s" % destination)
                 exit(1)
 
-
-def spill_directory(directory, destination, keep=False, overwrite=False):
+def spill_directory(directory, destination, extension=None, keep=False, overwrite=False):
 
     if (destination and not os.path.exists(destination)):
         logger.info("Making directory: %s" % destination)
@@ -122,6 +122,10 @@ def spill_directory(directory, destination, keep=False, overwrite=False):
     num_files_moved = 0
     for file in os.listdir(directory):
         full_path = os.path.join(directory, file)
+
+        if extension and not file.endswith("." + extension):
+            logger.debug("Skipping \"%s\": wrong extension" % file)
+            continue
 
         if full_path == destination:
             logger.debug("Skipping destination directory \"%s\"" % file)
@@ -159,7 +163,7 @@ def main():
     destination = os.path.abspath(destination)
 
     check_permissions(spilled, destination=destination)
-    spill_directory(spilled, destination, keep=args.keep, overwrite=args.overwrite)
+    spill_directory(spilled, destination, extension=args.file_extension, keep=args.keep, overwrite=args.overwrite)
 
 if __name__ == "__main__":
     main()
