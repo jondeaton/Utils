@@ -61,11 +61,11 @@ def parse_arguments():
 
     file_group = parser.add_argument_group("Files")
     file_group.add_argument("directory", nargs=1, help="The directory to be spilled")
-    file_group.add_argument("destination", nargs='?', help="Destination to spill into")
+    file_group.add_argument("destination", nargs='?', help="Target destination to spill into")
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument("-k", "--keep-directory", dest="keep", action="store_true", help="Keep spilled directory")
-    options_group.add_argument("-f", "--overwrite", action="store_true", help="Overwrite files")
+    options_group.add_argument("-f", "--overwrite", action="store_true", help="Overwrite files in target")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
@@ -79,7 +79,7 @@ def setup_logging(args):
         logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
     elif args.verbose:
         logger.setLevel(logging.INFO)
-        logging.basicConfig(format='[%(asctime)s][%(levelname)s] - %(message)s')
+        logging.basicConfig(format='[%(levelname)s] - %(message)s')
     else:
         logger.setLevel(logging.WARNING)
         logging.basicConfig(format='[spill][%(levelname)s] - %(message)s')
@@ -88,7 +88,7 @@ def cant_modify(path):
     return not os.access(path, os.R_OK) or not os.access(path, os.W_OK)
 
 def check_permissions(spilled, destination=None):
-    logger.debug("Checking permissions: %s" % spilled)
+    logger.debug("Checking permissions on source: %s" % spilled)
 
     if not os.path.isdir(spilled):
         logger.error("Not a directory: %s" % spilled)
@@ -104,9 +104,9 @@ def check_permissions(spilled, destination=None):
             exit(1)
         if not os.path.exists(destination): return
         else:
-            logger.debug("Checking permissions: %s" % destination)
+            logger.debug("Checking permissions on target: %s" % destination)
             if cant_modify(destination):
-                logger.error("Cannot modify destination: %s" % destination)
+                logger.error("Cannot modify target: %s" % destination)
                 exit(1)
 
 
@@ -123,6 +123,10 @@ def spill_directory(directory, destination, keep=False, overwrite=False):
     for file in os.listdir(directory):
         full_path = os.path.join(directory, file)
 
+        if full_path == destination:
+            logger.debug("Skipping destination directory \"%s\"" % file)
+            continue
+
         if cant_modify(full_path):
             logger.warning("Could not move %s: permission denied" % file)
             keep=True
@@ -134,7 +138,7 @@ def spill_directory(directory, destination, keep=False, overwrite=False):
                 logger.info("Did not move: %s" % new_filename)
                 continue
 
-        logger.info("Moving %s..." % file)
+        logger.info("Moving \"%s\" -> \"%s\"" % (file, destination))
         os.rename(full_path, new_filename)
         num_files_moved += 1
 
@@ -152,6 +156,7 @@ def main():
 
     spilled = os.path.abspath(args.directory[0])
     destination = args.destination if args.destination else os.path.dirname(spilled)
+    destination = os.path.abspath(destination)
 
     check_permissions(spilled, destination=destination)
     spill_directory(spilled, destination, keep=args.keep, overwrite=args.overwrite)
