@@ -1,4 +1,5 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env node
+
 /**
  * File: poster.ts
  * ---------------
@@ -13,27 +14,28 @@ import command_line_args = require('command-line-args');
 
 // command line parsing
 const option_definitions = [
-  { name: 'verbose', alias: 'v', type: Boolean, defaultOption: false },
-  { name: 'directory', type: String, multiple: false, defaultValue: './' },
-  { name: 'regex', alias: 'r', type: String, defaultValue: '.*'},
-  { name: 'host', alias: 'h', type: String, defaultValue: 'localhost'},
-  { name: 'port', alias: 'p', type: Number, defaultValue: 3000},
-  { name: 'path', alias: 't', type: String},
+  { name: 'verbose',    alias: 'v', type: Boolean,                  defaultOption: false },
+  { name: 'directory',              type: String,  multiple: false, defaultValue: './' },
+  { name: 'regex',      alias: 'r', type: String,                   defaultValue: '.*'},
+  { name: 'host',       alias: 'h', type: String,                   defaultValue: 'localhost'},
+  { name: 'port',       alias: 'p', type: Number,                   defaultValue: 3000},
+  { name: 'route',      alias: 't', type: String},
+  { name: 'method',     alias: 'm', type: String,                   defaultValue: 'POST'}
 ];
 const options = command_line_args(option_definitions);
+console.log(`route: ${options.route}`);
 const post_options = {
   host: options.host,
   port: options.port,
-  path: options.path,
-  method: 'POST',
+  path: options.route,
+  method: options.method,
   headers: undefined
 };
-
 const regex = new RegExp(options.regex); // Create the regex for searching
 
 if (options.verbose) {
-  console.log(`Posting files in directory: \"${options.directory}\" matching: \"${options.regex}\"`);
-  console.log(`Posting to: ${options.host}:${options.port}${options.path}`);
+  console.log(`${options.method}-ing from dir: \"${options.directory}\" matching: \"${options.regex}\"`);
+  console.log(`Posting to: ${options.host}:${options.port}${options.route}`);
 }
 
 fs.readdir(options.directory, (dir_error, files) => {
