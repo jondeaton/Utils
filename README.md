@@ -13,3 +13,9 @@ then delete the directory `garbage` if it has become empty.
     `spill some/path/garbage ~/trash`
 
 will move the contetns of `garbage` into `~/trash` instead of `some/path`
+
+To create a binary: 
+
+`cp spill.py spill.pyx`
+`cython spill.pyx --embed`
+`gcc -Os -I /usr/include/python3.6m -o spill spill.pyx -lpython3.6m -lpthread -lm -lutil -ldl`
